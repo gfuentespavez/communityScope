@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Actividad — communityScope</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --ink: #0e1410;
+      --paper: #f4efe6;
+      --paper-2: #ebe5d8;
+      --paper-3: #ddd5c2;
+      --accent: #ffcc05;
+      --accent-deep: #f0a500;
+      --moss: #2d4a3a;
+      --moss-light: #4a7a5e;
+      --rust: #c4502a;
+      --sky: #6b8ca8;
+      --line: #1a1f1c;
+      --grid: rgba(14, 20, 16, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Inter Tight', sans-serif;
+      font-weight: 400;
+      overflow-x: hidden;
+    }
+
+    body {
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(255, 204, 5, 0.06), transparent 40%),
+        radial-gradient(circle at 80% 90%, rgba(45, 74, 58, 0.05), transparent 40%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 1;
+      mix-blend-mode: multiply;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 2;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px 36px 80px;
+    }
+
+    /* === HEADER === */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 0 28px;
+      border-bottom: 1px solid var(--ink);
+      margin-bottom: 32px;
+    }
+
+    .brand { display: flex; align-items: baseline; gap: 14px; }
+
+    .brand-mark {
+      width: 36px; height: 36px;
+      background: var(--ink);
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    .brand-mark::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 13px;
+      border-radius: 50%;
+      background: var(--ink);
+    }
+
+    .brand-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 900;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .brand-name em { font-style: italic; font-weight: 400; color: var(--moss); }
+
+    .brand-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--moss);
+      border-left: 1px solid var(--ink);
+      padding-left: 12px;
+    }
+
+    nav { display: flex; gap: 28px; align-items: center; }
+
+    nav a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      position: relative;
+      padding: 4px 0;
+    }
+    nav a:hover { color: var(--rust); }
+    nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0;
+      bottom: -2px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .session-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 8px 14px;
+      border-radius: 100px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .session-pill .dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.4); }
+    }
+
+    /* === STRIP === */
+    .strip {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--ink);
+    }
+
+    .strip h1 {
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+    }
+    .strip h1 em { font-style: italic; font-weight: 500; color: var(--moss); }
+    .strip h1 strong {
+      font-weight: 900;
+      background: var(--accent);
+      padding: 0 0.1em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .strip .meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--moss);
+    }
+    .strip .meta b {
+      display: block;
+      color: var(--ink);
+      font-size: 22px;
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      margin-top: 4px;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+
+    /* === MAP VIEW GRID === */
+    .map-view {
+      display: grid;
+      grid-template-columns: 280px 1fr 360px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--paper-2);
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .panel-label {
+      position: absolute;
+      top: -10px;
+      left: 16px;
+      background: var(--paper);
+      padding: 0 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .panel-label::before { content: "◆ "; color: var(--accent-deep); }
+
+    /* === LEFT PANEL === */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--moss);
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    .section-label:first-of-type { margin-top: 8px; }
+
+    .time-toggle {
+      display: flex;
+      background: var(--ink);
+      border-radius: 3px;
+      padding: 3px;
+      gap: 0;
+    }
+    .time-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: rgba(244, 239, 230, 0.5);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 8px 4px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .time-btn.active { background: var(--accent); color: var(--ink); }
+    .time-btn:not(.active):hover { color: var(--paper); }
+
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .filter-chip {
+      background: transparent;
+      border: 1px solid var(--paper-3);
+      color: var(--ink);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      padding: 5px 9px;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .filter-chip:hover { border-color: var(--ink); }
+    .filter-chip.active {
+      background: var(--moss);
+      color: var(--paper);
+      border-color: var(--moss);
+    }
+
+    .legend-scale {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .legend-dot {
+      border-radius: 50%;
+      border: 1.5px solid var(--ink);
+      flex-shrink: 0;
+    }
+    .legend-item span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--ink);
+      flex: 1;
+    }
+    .legend-item em {
+      font-family: 'Fraunces', serif;
+      font-style: normal;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .map-tip {
+      margin-top: 20px;
+      padding: 12px;
+      background: var(--paper);
+      border-radius: 3px;
+      border: 1px dashed var(--paper-3);
+    }
+    .map-tip p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: var(--moss);
+      line-height: 1.6;
+    }
+
+    /* === MAP PANEL === */
+    .map-panel {
+      background: var(--ink);
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      padding: 0;
+    }
+
+    .map-toolbar {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #2a2f2c;
+      color: var(--paper);
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .live-indicator .live-label {
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .live-indicator .live-num {
+      color: var(--paper);
+    }
+
+    .map-ctrl-group { display: flex; gap: 6px; }
+    .ctrl-btn {
+      width: 28px; height: 28px;
+      background: transparent;
+      border: 1px solid #3a403c;
+      color: var(--paper);
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 15px;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+    .ctrl-btn:hover { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+
+    #map {
+      height: 540px;
+      width: 100%;
+    }
+
+    /* Leaflet overrides */
+    .leaflet-container {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .leaflet-tile-pane {
+      filter: saturate(0.45) sepia(0.18) brightness(0.97);
+    }
+    .leaflet-control-attribution {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 8px !important;
+      background: rgba(14,20,16,0.75) !important;
+      color: rgba(244,239,230,0.6) !important;
+    }
+    .leaflet-control-attribution a { color: rgba(244,239,230,0.6) !important; }
+
+    .map-tooltip {
+      background: var(--ink) !important;
+      border: 1px solid rgba(255,204,5,0.4) !important;
+      border-radius: 3px !important;
+      color: var(--paper) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important;
+      letter-spacing: 0.08em !important;
+      padding: 6px 10px !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+      white-space: nowrap;
+    }
+    .map-tooltip::before { display: none !important; }
+
+    /* === RIGHT PANEL === */
+    #detail-panel {
+      max-height: 620px;
+      overflow-y: auto;
+    }
+    #detail-panel::-webkit-scrollbar { width: 4px; }
+    #detail-panel::-webkit-scrollbar-track { background: var(--paper-2); }
+    #detail-panel::-webkit-scrollbar-thumb { background: var(--paper-3); border-radius: 2px; }
+
+    /* Overview state */
+    .overview-total { margin-bottom: 16px; }
+    .overview-total .big-num {
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      font-size: 62px;
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+    }
+    .overview-total .big-num em { font-style: italic; color: var(--moss); }
+    .overview-total p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--moss);
+      margin-top: 8px;
+    }
+
+    .overview-sep {
+      border: none;
+      border-top: 1px solid var(--paper-3);
+      margin: 14px 0 10px;
+    }
+
+    /* Ranking list */
+    .rank-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--paper-3);
+      cursor: pointer;
+      transition: padding-left 0.15s;
+    }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-item:hover { padding-left: 4px; }
+    .rank-item.highlighted { padding-left: 4px; }
+
+    .rank-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .rank-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--moss);
+      min-width: 18px;
+    }
+    .rank-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 14px;
+      flex: 1;
+      line-height: 1.1;
+    }
+    .rank-trend {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--moss-light);
+    }
+
+    .rank-bar-row { display: flex; align-items: center; gap: 8px; }
+    .rank-bar-track {
+      flex: 1;
+      height: 3px;
+      background: var(--paper-3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .rank-bar-fill { height: 100%; border-radius: 2px; }
+    .rank-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--ink);
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* Area detail state */
+    .back-btn {
+      background: transparent;
+      border: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--moss);
+      cursor: pointer;
+      padding: 0 0 14px;
+      display: block;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: var(--rust); }
+
+    .area-badge {
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: 3px;
+      padding: 16px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .area-badge::before {
+      content: "";
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 100px; height: 100px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0.12;
+    }
+    .area-badge-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .area-badge-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .stat-cell {
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      border-radius: 3px;
+      padding: 10px;
+    }
+    .stat-cell b {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+      display: block;
+      line-height: 1;
+    }
+    .stat-cell span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--moss);
+    }
+
+    .detail-section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--moss);
+      margin-bottom: 10px;
+    }
+
+    .theme-bars { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+    .theme-bar-row { display: flex; align-items: center; gap: 8px; }
+    .theme-bar-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      width: 108px;
+      flex-shrink: 0;
+      color: var(--ink);
+    }
+    .theme-bar-track {
+      flex: 1;
+      height: 4px;
+      background: var(--paper-3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .theme-bar-fill { height: 100%; background: var(--moss-light); border-radius: 2px; }
+    .theme-bar-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--moss);
+      min-width: 22px;
+      text-align: right;
+    }
+
+    .recent-list { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .recent-list li {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      padding: 6px 10px;
+      background: var(--paper);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .recent-list li::before { content: "↗"; color: var(--rust); font-size: 10px; }
+
+    .open-studio-btn {
+      width: 100%;
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: var(--ink);
+      padding: 13px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .open-studio-btn:hover { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+
+    /* === FOOTER === */
+    footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--moss);
+    }
+
+    @media (max-width: 1100px) {
+      .map-view { grid-template-columns: 1fr; }
+      .strip { grid-template-columns: 1fr; gap: 16px; }
+      #map { height: 380px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div>
+        <div class="brand-name">community·<em>Scope</em></div>
+      </div>
+      <span class="brand-sub">City Lab Biobío<br>Suite Participativa v0.3</span>
+    </div>
+    <nav>
+      <a href="index.html">Estudio</a>
+      <a href="#">Campañas</a>
+      <a href="#">Galería</a>
+      <a href="#">Deliberación</a>
+      <a href="map.html" class="active">Actividad</a>
+      <span class="session-pill"><span class="dot"></span>Sesión #2026.05.06 · 14:32</span>
+    </nav>
+  </header>
+
+  <!-- STRIP -->
+  <section class="strip">
+    <h1>Concepción <em>imagina</em><br>mapa de <strong>actividad IA</strong>.</h1>
+    <div class="meta">Generaciones totales<b id="live-count">1.289</b></div>
+    <div class="meta">Barrios activos<b>11</b></div>
+    <div class="meta">Esta semana<b>+34%</b></div>
+  </section>
+
+  <!-- MAP VIEW -->
+  <div class="map-view">
+
+    <!-- LEFT PANEL -->
+    <aside class="panel">
+      <span class="panel-label">Filtros</span>
+
+      <div class="section-label">Período</div>
+      <div class="time-toggle">
+        <button class="time-btn active">Semana</button>
+        <button class="time-btn">Mes</button>
+        <button class="time-btn">Total</button>
+      </div>
+
+      <div class="section-label">Tipo de intervención</div>
+      <div class="filter-chips">
+        <button class="filter-chip active">Peatonalizar</button>
+        <button class="filter-chip active">Arbolado</button>
+        <button class="filter-chip active">Ciclovía</button>
+        <button class="filter-chip active">Plaza</button>
+        <button class="filter-chip active">Vegetación nativa</button>
+        <button class="filter-chip active">Mobiliario</button>
+        <button class="filter-chip active">Murales</button>
+        <button class="filter-chip active">Parque</button>
+      </div>
+
+      <div class="section-label">Escala de actividad</div>
+      <div class="legend-scale">
+        <div class="legend-item">
+          <div class="legend-dot" style="width:10px;height:10px;background:#4a7a5e;border-color:#4a7a5e;"></div>
+          <span>1–50 gen.</span>
+          <em style="color:#4a7a5e;">bajo</em>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="width:14px;height:14px;background:#6b8ca8;border-color:#6b8ca8;"></div>
+          <span>51–100 gen.</span>
+          <em style="color:#6b8ca8;">medio</em>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="width:18px;height:18px;background:#f0a500;border-color:#f0a500;"></div>
+          <span>101–200 gen.</span>
+          <em style="color:#f0a500;">alto</em>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="width:22px;height:22px;background:#c4502a;border-color:#c4502a;"></div>
+          <span>200+ gen.</span>
+          <em style="color:#c4502a;">máximo</em>
+        </div>
+      </div>
+
+      <div class="map-tip">
+        <p>Haz clic sobre un área para<br>ver su detalle y explorarla<br>en el Estudio.</p>
+      </div>
+    </aside>
+
+    <!-- MAP PANEL -->
+    <section class="map-panel">
+      <span class="panel-label" style="background:var(--ink);color:var(--paper);">Actividad generativa</span>
+      <div class="map-toolbar">
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          <span class="live-label">En vivo</span>
+          <span class="live-num" id="toolbar-count">1.289 generaciones en el GCon</span>
+        </div>
+        <div class="map-ctrl-group">
+          <button class="ctrl-btn" id="zoom-in" title="Acercar">+</button>
+          <button class="ctrl-btn" id="zoom-out" title="Alejar">−</button>
+          <button class="ctrl-btn" id="reset-view" title="Centrar">⊙</button>
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <aside class="panel" id="detail-panel">
+      <span class="panel-label" id="detail-label">Panorama</span>
+
+      <!-- OVERVIEW STATE -->
+      <div id="overview-state">
+        <div class="overview-total">
+          <div class="big-num"><span id="panel-big-num">1.289</span> <em>gen.</em></div>
+          <p>generaciones IA en el área metropolitana</p>
+        </div>
+        <hr class="overview-sep" />
+        <div class="section-label" style="margin-top:0">Barrios más activos</div>
+        <div id="ranking-list"></div>
+        <hr class="overview-sep" />
+        <div class="section-label" style="margin-top:0">Temas más frecuentes</div>
+        <div class="theme-bars" id="overview-themes"></div>
+      </div>
+
+      <!-- AREA DETAIL STATE -->
+      <div id="area-state" style="display:none">
+        <button class="back-btn" id="back-btn">← Volver al panorama</button>
+        <div class="area-badge">
+          <div class="area-badge-name" id="area-name">—</div>
+          <div class="area-badge-sub" id="area-sub">—</div>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="detail-section-label">Intervenciones propuestas</div>
+        <div class="theme-bars" id="area-theme-bars"></div>
+        <div class="detail-section-label">Locaciones recientes</div>
+        <ul class="recent-list" id="recent-list"></ul>
+        <a class="open-studio-btn" href="index.html">Abrir en Estudio ⟶</a>
+      </div>
+    </aside>
+
+  </div>
+
+  <footer>
+    <span>© 2026 City Lab Biobío · UdeC</span>
+    <span>Mapa: © OpenStreetMap · © CARTO</span>
+    <span>Modelo BBO·urbano v2.4</span>
+  </footer>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const AREAS = [
+    { id: 1,  name: "Centro Histórico",      neighborhood: "Concepción Centro",    lat: -36.827, lng: -73.049, gens: 287, trend: 23, participants: 147, themes: { "Peatonalizar": 89, "Arbolado": 74, "Plaza": 65, "Iluminación": 38, "Ciclovía": 21 }, recent: ["Pedro de Valdivia 1140", "Caupolicán 850", "Freire con Maipú"] },
+    { id: 2,  name: "Ribera Bío Bío",        neighborhood: "Sector ribereño",      lat: -36.838, lng: -73.042, gens: 201, trend: 55, participants: 89,  themes: { "Parque ribereño": 78, "Ciclovía": 62, "Murales": 38, "Mobiliario": 23 }, recent: ["Borde río sector norte", "Av. Los Carrera sur"] },
+    { id: 3,  name: "Barrio Universitario",  neighborhood: "UdeC / Campanil",      lat: -36.833, lng: -73.064, gens: 184, trend: 41, participants: 112, themes: { "Ciclovía": 67, "Vegetación nativa": 55, "Murales": 42, "Arbolado": 20 }, recent: ["Víctor Lamas 1290", "Roosevelt con Chacabuco"] },
+    { id: 4,  name: "Pedro de Valdivia",     neighborhood: "Av. P. de Valdivia",   lat: -36.812, lng: -73.046, gens: 156, trend: 18, participants: 78,  themes: { "Arbolado": 58, "Iluminación": 48, "Ciclovía": 32, "Pavimento": 18 }, recent: ["Av. Pedro de Valdivia 890", "Gran Bretaña 1050"] },
+    { id: 5,  name: "San Pedro de la Paz",   neighborhood: "Laguna San Pedro",     lat: -36.853, lng: -73.107, gens: 118, trend: 29, participants: 63,  themes: { "Parque": 44, "Ciclovía": 38, "Arbolado": 28, "Mobiliario": 8 }, recent: ["Borde Laguna Chica", "Av. Los Gladiolos"] },
+    { id: 6,  name: "Lorenzo Arenas",        neighborhood: "Barrio Lorenzo Arenas",lat: -36.840, lng: -73.058, gens: 92,  trend: 7,  participants: 44,  themes: { "Plaza": 38, "Mobiliario": 28, "Vegetación nativa": 18, "Arbolado": 8 }, recent: ["Av. Los Carrera 2300", "Héroes de la Concepción"] },
+    { id: 7,  name: "Talcahuano",            neighborhood: "Puerto Talcahuano",    lat: -36.724, lng: -73.117, gens: 74,  trend: 15, participants: 39,  themes: { "Paseo marítimo": 30, "Murales": 25, "Arbolado": 12, "Plaza": 7 }, recent: ["Colón 850", "Freire con O'Higgins"] },
+    { id: 8,  name: "Barrio Norte",          neighborhood: "Sector norte Conce.",  lat: -36.808, lng: -73.052, gens: 67,  trend: 12, participants: 31,  themes: { "Arbolado": 28, "Pavimento": 22, "Iluminación": 17 }, recent: ["Lirquén 340", "Manuel Rodríguez 560"] },
+    { id: 9,  name: "Hualpén",               neighborhood: "Parque Hualpén",       lat: -36.800, lng: -73.088, gens: 43,  trend: 5,  participants: 22,  themes: { "Parque": 20, "Mobiliario": 15, "Plaza": 8 }, recent: ["Borde costero norte"] },
+    { id: 10, name: "Chiguayante",           neighborhood: "Ribera sur",           lat: -36.922, lng: -73.019, gens: 38,  trend: 3,  participants: 18,  themes: { "Arbolado": 16, "Plaza": 12, "Mobiliario": 10 }, recent: ["Av. Biobío norte"] },
+    { id: 11, name: "Coronel",               neighborhood: "Costa Coronel",        lat: -37.024, lng: -73.149, gens: 29,  trend: 8,  participants: 15,  themes: { "Costanera": 14, "Plaza": 9, "Arbolado": 6 }, recent: ["Costanera norte"] }
+  ];
+
+  const MAX_GENS = Math.max(...AREAS.map(a => a.gens));
+
+  function getRadius(gens) {
+    return Math.sqrt(gens / MAX_GENS) * 26 + 7;
+  }
+
+  function getColor(gens) {
+    if (gens >= 200) return '#c4502a';
+    if (gens >= 101) return '#f0a500';
+    if (gens >= 51)  return '#6b8ca8';
+    return '#4a7a5e';
+  }
+
+  // Init map
+  const map = L.map('map', {
+    center: [-36.87, -73.07],
+    zoom: 11,
+    zoomControl: false,
+    attributionControl: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Custom zoom buttons
+  document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+  document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+  document.getElementById('reset-view').addEventListener('click', () => map.flyTo([-36.87, -73.07], 11, { duration: 0.8 }));
+
+  // Build markers
+  let selectedId = null;
+  const markers = {};
+
+  AREAS.forEach(area => {
+    const color = getColor(area.gens);
+    const marker = L.circleMarker([area.lat, area.lng], {
+      radius: getRadius(area.gens),
+      fillColor: color,
+      color: '#0e1410',
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.82
+    }).addTo(map);
+
+    marker.bindTooltip(
+      `<strong>${area.name}</strong><br>${area.gens} generaciones · ↑${area.trend}% esta semana`,
+      { className: 'map-tooltip', direction: 'top', offset: [0, -4] }
+    );
+
+    marker.on('click', () => selectArea(area));
+    markers[area.id] = { marker, color };
+  });
+
+  // Highlight ring for selected
+  let selectionRing = null;
+
+  function selectArea(area) {
+    selectedId = area.id;
+
+    // Reset all markers
+    AREAS.forEach(a => {
+      markers[a.id].marker.setStyle({ color: '#0e1410', weight: 1.5, fillOpacity: 0.82 });
+    });
+
+    // Highlight selected
+    markers[area.id].marker.setStyle({ color: '#ffcc05', weight: 3, fillOpacity: 1 });
+
+    map.flyTo([area.lat, area.lng], 13, { duration: 0.7 });
+
+    // Update right panel
+    document.getElementById('overview-state').style.display = 'none';
+    document.getElementById('area-state').style.display = 'block';
+    document.getElementById('detail-label').textContent = '◆ Área';
+
+    document.getElementById('area-name').textContent = area.name;
+    document.getElementById('area-sub').textContent = area.neighborhood;
+
+    // Stats grid
+    const color = getColor(area.gens);
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-cell">
+        <b style="color:${color}">${area.gens}</b>
+        <span>generaciones</span>
+      </div>
+      <div class="stat-cell">
+        <b style="color:#2d4a3a">+${area.trend}%</b>
+        <span>esta semana</span>
+      </div>
+      <div class="stat-cell">
+        <b>${area.participants}</b>
+        <span>participantes</span>
+      </div>
+      <div class="stat-cell">
+        <b style="font-size:14px;letter-spacing:-0.01em">${Object.keys(area.themes)[0]}</b>
+        <span>tema líder</span>
+      </div>
+    `;
+
+    // Theme bars
+    const maxTheme = Math.max(...Object.values(area.themes));
+    const themeBarsEl = document.getElementById('area-theme-bars');
+    themeBarsEl.innerHTML = '';
+    Object.entries(area.themes).forEach(([name, val]) => {
+      const pct = (val / maxTheme * 100).toFixed(0);
+      themeBarsEl.innerHTML += `
+        <div class="theme-bar-row">
+          <span class="theme-bar-label">${name}</span>
+          <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${pct}%"></div></div>
+          <span class="theme-bar-val">${val}</span>
+        </div>`;
+    });
+
+    // Recent
+    const recentEl = document.getElementById('recent-list');
+    recentEl.innerHTML = area.recent.map(r => `<li>${r}</li>`).join('');
+
+    // Highlight ranking item
+    document.querySelectorAll('.rank-item').forEach(el => {
+      el.classList.toggle('highlighted', parseInt(el.dataset.id) === area.id);
+    });
+  }
+
+  function showOverview() {
+    selectedId = null;
+    AREAS.forEach(a => {
+      markers[a.id].marker.setStyle({ color: '#0e1410', weight: 1.5, fillOpacity: 0.82 });
+    });
+    map.flyTo([-36.87, -73.07], 11, { duration: 0.7 });
+    document.getElementById('overview-state').style.display = 'block';
+    document.getElementById('area-state').style.display = 'none';
+    document.getElementById('detail-label').textContent = '◆ Panorama';
+    document.querySelectorAll('.rank-item').forEach(el => el.classList.remove('highlighted'));
+  }
+
+  document.getElementById('back-btn').addEventListener('click', showOverview);
+
+  // Build ranking list
+  const sorted = [...AREAS].sort((a, b) => b.gens - a.gens).slice(0, 5);
+  const rankEl = document.getElementById('ranking-list');
+
+  sorted.forEach((area, i) => {
+    const pct = (area.gens / MAX_GENS * 100).toFixed(0);
+    const color = getColor(area.gens);
+    const div = document.createElement('div');
+    div.className = 'rank-item';
+    div.dataset.id = area.id;
+    div.innerHTML = `
+      <div class="rank-header">
+        <span class="rank-num">0${i + 1}</span>
+        <span class="rank-name">${area.name}</span>
+        <span class="rank-trend">↑${area.trend}%</span>
+      </div>
+      <div class="rank-bar-row">
+        <div class="rank-bar-track">
+          <div class="rank-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <span class="rank-count">${area.gens}</span>
+      </div>`;
+    div.addEventListener('click', () => {
+      selectArea(area);
+    });
+    rankEl.appendChild(div);
+  });
+
+  // Overview themes aggregation
+  const globalThemes = {};
+  AREAS.forEach(area => {
+    Object.entries(area.themes).forEach(([k, v]) => {
+      globalThemes[k] = (globalThemes[k] || 0) + v;
+    });
+  });
+  const topThemes = Object.entries(globalThemes)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+  const maxGlobalTheme = topThemes[0][1];
+  const overviewThemesEl = document.getElementById('overview-themes');
+  topThemes.forEach(([name, val]) => {
+    const pct = (val / maxGlobalTheme * 100).toFixed(0);
+    overviewThemesEl.innerHTML += `
+      <div class="theme-bar-row">
+        <span class="theme-bar-label">${name}</span>
+        <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${pct}%"></div></div>
+        <span class="theme-bar-val">${val}</span>
+      </div>`;
+  });
+
+  // Live counter
+  let liveCount = 1289;
+  function tick() {
+    liveCount++;
+    const fmt = liveCount.toLocaleString('es-CL');
+    document.getElementById('live-count').textContent = fmt;
+    document.getElementById('panel-big-num').textContent = fmt;
+
+    // Flash a random marker briefly
+    const idx = Math.floor(Math.random() * AREAS.length);
+    const area = AREAS[idx];
+    if (area.id !== selectedId) {
+      const { marker, color } = markers[area.id];
+      marker.setStyle({ fillColor: '#ffcc05', color: '#ffcc05', fillOpacity: 1 });
+      setTimeout(() => {
+        marker.setStyle({ fillColor: color, color: '#0e1410', fillOpacity: 0.82 });
+      }, 380);
+    }
+
+    setTimeout(tick, 2200 + Math.random() * 2800);
+  }
+  setTimeout(tick, 1800);
+
+  // Time toggle
+  document.querySelectorAll('.time-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Filter chips
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => chip.classList.toggle('active'));
+  });
+</script>
+</body>
+</html>
